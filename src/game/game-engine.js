@@ -564,9 +564,25 @@ class GameEngine {
     const data = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
     this.settings = data.settings;
 
+    const communityCards = data.communityCards.map(c => new Card(c.rank, c.suit));
+    const players = data.players.map(p => ({
+      ...p,
+      holeCards: p.holeCards.map(c => new Card(c.rank, c.suit))
+    }));
+
+    // Reconstruct the remaining deck by removing all already-dealt cards.
+    // This allows advancePhase to deal new community cards in a loaded game.
+    const dealtKeys = new Set();
+    for (const c of communityCards) dealtKeys.add(`${c.rank}:${c.suit}`);
+    for (const p of players) {
+      for (const c of p.holeCards) dealtKeys.add(`${c.rank}:${c.suit}`);
+    }
+    const remainingDeck = new Deck();
+    remainingDeck.cards = remainingDeck.cards.filter(c => !dealtKeys.has(`${c.rank}:${c.suit}`));
+
     this.state = {
       phase: data.phase,
-      communityCards:  data.communityCards.map(c => new Card(c.rank, c.suit)),
+      communityCards,
       pot:             data.pot,
       currentBet:      data.currentBet,
       currentPlayerIndex: data.currentPlayerIndex,
@@ -580,12 +596,9 @@ class GameEngine {
       actionCount:     0,
       lastAggressorIndex: data.lastAggressorIndex,
       sidePots: [],
-      deck: null,
+      deck: remainingDeck,
       showdownData: null,
-      players: data.players.map(p => ({
-        ...p,
-        holeCards: p.holeCards.map(c => new Card(c.rank, c.suit))
-      }))
+      players
     };
   }
 }

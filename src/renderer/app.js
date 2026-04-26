@@ -396,7 +396,19 @@ async function performAITurn(player) {
         decision = await getCloudAIDecision(player.aiConfig, gameStateForAI, actNames);
       } catch (e) {
         logErr('Cloud AI error for ' + player.name + ': ' + e.message);
-        decision = actNames.includes('check') ? { action: 'check' } : { action: 'fold' };
+        decision = decide({
+          holeCards:      player.holeCards,
+          communityCards: st.communityCards,
+          currentBet:     st.currentBet,
+          roundBet:       player.roundBet,
+          maxBet:         player.chips + player.roundBet,
+          pot:            st.pot,
+          numActive:      st.players.filter(p => p.status === 'active').length,
+          lastRaise:      st.lastRaise,
+          bigBlind:       appSettings.bigBlind,
+          aiType:         player.aiType || 'balanced',
+          chips:          player.chips
+        });
       }
     } else {
       decision = decide({
