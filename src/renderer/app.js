@@ -24,16 +24,8 @@ function logErr(...args) {
   showErrorOverlay(args.join(' '));
 }
 
-function appendDebugLog(msg) {
-  try {
-    let el = document.getElementById('debug-log');
-    if (!el) return;
-    const line = document.createElement('div');
-    line.textContent = msg;
-    line.style.cssText = 'font-size:10px;color:#0f0;border-bottom:1px solid #333;padding:1px 0';
-    el.appendChild(line);
-    el.scrollTop = el.scrollHeight;
-  } catch (_) {}
+function appendDebugLog(_msg) {
+  // Debug panel removed; open DevTools (Ctrl+Shift+I) to view console logs.
 }
 
 function showErrorOverlay(msg) {
@@ -111,17 +103,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 });
 
 function injectDebugPanel() {
-  // Inject a small debug log panel at bottom of screen and an error overlay
-  const debugPanel = document.createElement('div');
-  debugPanel.id = 'debug-panel';
-  debugPanel.style.cssText = [
-    'position:fixed;bottom:0;left:0;right:0;z-index:9999',
-    'background:rgba(0,0,0,.85);max-height:120px;overflow-y:auto',
-    'font-family:monospace;padding:4px'
-  ].join(';');
-  debugPanel.innerHTML = '<div id="debug-log"></div>';
-  document.body.appendChild(debugPanel);
-
+  // Debug panel removed — logs go to the browser/DevTools console only.
   const errOverlay = document.createElement('div');
   errOverlay.id = 'error-overlay';
   errOverlay.style.cssText = [

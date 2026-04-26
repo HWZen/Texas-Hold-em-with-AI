@@ -26,35 +26,27 @@ function makeCardEl(card, small, faceDown) {
   return el;
 }
 
-// ── Player seat positions (relative to #table 660×340) ────────────────────
-// Positions are [left%, top%] from top-left of the table div.
-// 8 slots: index 0 = human (bottom-center, shown in #human-area instead),
-// indices 1-7 = AI seats around the oval.
-const SEAT_POSITIONS = [
-  [50,  112], // 0: bottom-center (human — not rendered inside table)
-  [82,   96], // 1: bottom-right
-  [95,   54], // 2: right
-  [82,   12], // 3: top-right
-  [50,   -4], // 4: top-center
-  [18,   12], // 5: top-left
-  [ 5,   54], // 6: left
-  [18,   96], // 7: bottom-left
-];
-
 // ── Build static seat elements once ───────────────────────────────────────
 
 function buildSeats(tableEl, playerCount) {
   // Remove existing seats
   tableEl.querySelectorAll('.player-seat').forEach(el => el.remove());
 
-  // Slots 1 … playerCount-1 are for AI players
-  for (let slot = 1; slot < playerCount && slot < SEAT_POSITIONS.length; slot++) {
-    const [leftPct, topPct] = SEAT_POSITIONS[slot];
+  // Human is conceptually at the bottom (angle 90° in CSS coords).
+  // Distribute AI players (slots 1 … playerCount-1) evenly around the ellipse.
+  const aX = 46; // % half-axis along X
+  const aY = 44; // % half-axis along Y
+  for (let slot = 1; slot < playerCount && slot < 8; slot++) {
+    const angleDeg = 90 + slot * (360 / playerCount);
+    const rad = angleDeg * Math.PI / 180;
+    const leftPct = 50 + aX * Math.cos(rad);
+    const topPct  = 50 + aY * Math.sin(rad);
+
     const seat = document.createElement('div');
     seat.className = 'player-seat';
     seat.id = `seat-${slot}`;
     seat.style.left = `${leftPct}%`;
-    seat.style.top  = `${(topPct / 340) * 100}%`;
+    seat.style.top  = `${topPct}%`;
     tableEl.appendChild(seat);
   }
 }
