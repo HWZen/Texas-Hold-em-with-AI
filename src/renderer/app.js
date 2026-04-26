@@ -10,12 +10,135 @@ let appSettings   = null;
 let histRendered  = 0;
 let isProcessing  = false;
 
+// ── Logging ────────────────────────────────────────────────────────────────
+function log(...args) {
+  const msg = '[APP ' + new Date().toISOString().slice(11, 23) + '] ' + args.join(' ');
+  console.log(msg);
+  appendDebugLog(msg);
+}
+
+function logErr(...args) {
+  const msg = '[APP ERROR ' + new Date().toISOString().slice(11, 23) + '] ' + args.join(' ');
+  console.error(msg);
+  appendDebugLog('❌ ' + msg);
+  showErrorOverlay(args.join(' '));
+}
+
+function appendDebugLog(msg) {
+  try {
+    let el = document.getElementById('debug-log');
+    if (!el) return;
+    const line = document.createElement('div');
+    line.textContent = msg;
+    line.style.cssText = 'font-size:10px;color:#0f0;border-bottom:1px solid #333;padding:1px 0';
+    el.appendChild(line);
+    el.scrollTop = el.scrollHeight;
+  } catch (_) {}
+}
+
+function showErrorOverlay(msg) {
+  try {
+    let overlay = document.getElementById('error-overlay');
+    if (!overlay) return;
+    document.getElementById('error-msg').textContent = msg;
+    overlay.style.display = 'flex';
+  } catch (_) {}
+}
+
+// ── Global error catchers ──────────────────────────────────────────────────
+window.onerror = function(message, source, lineno, colno, error) {
+  logErr('Uncaught error: ' + message + ' at ' + source + ':' + lineno + ':' + colno);
+  if (error && error.stack) console.error(error.stack);
+  return false;
+};
+
+window.addEventListener('unhandledrejection', function(event) {
+  logErr('Unhandled promise rejection: ' + (event.reason && (event.reason.message || event.reason)));
+});
+
 // ── Init ───────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
-  appSettings = await window.api.getSettings();
-  buildSettingsUI();
+  log('DOMContentLoaded fired');
+
+  // Inject debug panel into DOM
+  injectDebugPanel();
+
+  log('window.api type:', typeof window.api);
+  if (!window.api) {
+    logErr('window.api is undefined! preload.js may have failed.');
+    showErrorOverlay('window.api 未定义，预加载脚本可能加载失败');
+    return;
+  }
+
+  log('Calling window.api.getSettings()...');
+  try {
+    appSettings = await window.api.getSettings();
+    log('getSettings() returned:', JSON.stringify(appSettings).slice(0, 80));
+  } catch (e) {
+    logErr('getSettings() threw: ' + e.message);
+    showErrorOverlay('获取设置失败: ' + e.message);
+    return;
+  }
+
+  if (!appSettings) {
+    logErr('appSettings is null/undefined after getSettings()');
+    showErrorOverlay('设置为空，使用默认值');
+    appSettings = {
+      playerCount: 5, initialChips: 10000, smallBlind: 10, bigBlind: 20,
+      players: [
+        {id:'ai_0',name:'Alice',  aiMode:'local',aiType:'balanced',     aiConfig:null},
+        {id:'ai_1',name:'Bob',    aiMode:'local',aiType:'aggressive',   aiConfig:null},
+        {id:'ai_2',name:'Charlie',aiMode:'local',aiType:'conservative', aiConfig:null},
+        {id:'ai_3',name:'Diana',  aiMode:'local',aiType:'balanced',     aiConfig:null},
+        {id:'ai_4',name:'Eve',    aiMode:'local',aiType:'aggressive',   aiConfig:null},
+        {id:'ai_5',name:'Frank',  aiMode:'local',aiType:'conservative', aiConfig:null},
+        {id:'ai_6',name:'Grace',  aiMode:'local',aiType:'balanced',     aiConfig:null}
+      ]
+    };
+  }
+
+  log('Calling buildSettingsUI()...');
+  try {
+    buildSettingsUI();
+    log('buildSettingsUI() OK');
+  } catch (e) {
+    logErr('buildSettingsUI() threw: ' + e.message + (e.stack ? '\n' + e.stack : ''));
+  }
+
+  log('Calling showScreen("start")...');
   showScreen('start');
+  log('Init complete, start screen visible.');
 });
+
+function injectDebugPanel() {
+  // Inject a small debug log panel at bottom of screen and an error overlay
+  const debugPanel = document.createElement('div');
+  debugPanel.id = 'debug-panel';
+  debugPanel.style.cssText = [
+    'position:fixed;bottom:0;left:0;right:0;z-index:9999',
+    'background:rgba(0,0,0,.85);max-height:120px;overflow-y:auto',
+    'font-family:monospace;padding:4px'
+  ].join(';');
+  debugPanel.innerHTML = '<div id="debug-log"></div>';
+  document.body.appendChild(debugPanel);
+
+  const errOverlay = document.createElement('div');
+  errOverlay.id = 'error-overlay';
+  errOverlay.style.cssText = [
+    'position:fixed;inset:0;z-index:99999',
+    'background:rgba(0,0,0,.88);display:none;flex-direction:column',
+    'align-items:center;justify-content:center;gap:16px;color:#fff'
+  ].join(';');
+  errOverlay.innerHTML = [
+    '<h2 style="color:#f66">❌ 发生错误</h2>',
+    '<pre id="error-msg" style="color:#faa;max-width:80%;white-space:pre-wrap;text-align:center"></pre>',
+    '<p style="color:#aaa;font-size:12px">请打开开发者工具 (Ctrl+Shift+I) 查看完整控制台日志</p>',
+    '<button onclick="document.getElementById(\'error-overlay\').style.display=\'none\'" ',
+    'style="padding:8px 20px;background:#555;border:none;border-radius:6px;color:#fff;cursor:pointer">关闭</button>'
+  ].join('');
+  document.body.appendChild(errOverlay);
+  log('Debug panel injected.');
+}
 
 // ── Screen management ───────────────────────────────────────────────────────
 function showScreen(name) {
@@ -26,33 +149,50 @@ function showScreen(name) {
 
 // ── New game ────────────────────────────────────────────────────────────────
 function startNewGame() {
-  engine       = new GameEngine(appSettings);
-  histRendered = 0;
-  document.getElementById('history-log').innerHTML = '';
-
-  buildSeats(document.getElementById('table'), appSettings.playerCount);
-  showScreen('game');
-
-  engine.startNewHand();
-  fullRedraw();
-  scheduleNext();
+  log('startNewGame() called, appSettings:', appSettings ? 'set (playerCount=' + appSettings.playerCount + ')' : 'NULL');
+  try {
+    log('Creating GameEngine...');
+    engine       = new GameEngine(appSettings);
+    log('GameEngine created, players:', engine.state.players.length);
+    histRendered = 0;
+    document.getElementById('history-log').innerHTML = '';
+    log('Calling buildSeats()...');
+    buildSeats(document.getElementById('table'), appSettings.playerCount);
+    log('buildSeats() done. Calling showScreen("game")...');
+    showScreen('game');
+    log('showScreen done. Starting new hand...');
+    engine.startNewHand();
+    log('startNewHand() done, phase:', engine.state.phase);
+    fullRedraw();
+    log('fullRedraw() done. Scheduling next...');
+    scheduleNext();
+    log('startNewGame() complete.');
+  } catch (e) {
+    logErr('startNewGame() threw: ' + e.message + (e.stack ? '\n' + e.stack : ''));
+  }
 }
 
 // ── Load game ───────────────────────────────────────────────────────────────
 async function loadGame() {
-  const saved = await window.api.loadGame();
-  if (!saved) { alert('没有找到存档！'); return; }
+  log('loadGame() called');
+  try {
+    const saved = await window.api.loadGame();
+    if (!saved) { alert('没有找到存档！'); return; }
 
-  engine       = new GameEngine(appSettings);
-  histRendered = 0;
-  engine.deserializeState(saved);
-  appSettings  = engine.settings;
-  document.getElementById('history-log').innerHTML = '';
+    engine       = new GameEngine(appSettings);
+    histRendered = 0;
+    engine.deserializeState(saved);
+    appSettings  = engine.settings;
+    document.getElementById('history-log').innerHTML = '';
 
-  buildSeats(document.getElementById('table'), engine.state.players.length);
-  showScreen('game');
-  fullRedraw();
-  scheduleNext();
+    buildSeats(document.getElementById('table'), engine.state.players.length);
+    showScreen('game');
+    fullRedraw();
+    scheduleNext();
+    log('loadGame() complete');
+  } catch (e) {
+    logErr('loadGame() threw: ' + e.message + (e.stack ? '\n' + e.stack : ''));
+  }
 }
 
 // ── Save game ───────────────────────────────────────────────────────────────
@@ -65,7 +205,8 @@ async function saveGame() {
 // ── Full UI redraw ─────────────────────────────────────────────────────────
 function fullRedraw() {
   if (!engine) return;
-  const st = engine.state;
+  try {
+    const st = engine.state;
 
   // Top bar
   document.getElementById('info-round').textContent  = st.roundNumber;
@@ -173,6 +314,9 @@ function fullRedraw() {
   } else {
     document.getElementById('showdown-overlay').classList.remove('active');
   }
+  } catch (e) {
+    logErr('fullRedraw() threw: ' + e.message + (e.stack ? '\n' + e.stack : ''));
+  }
 }
 
 // ── Human action handler ────────────────────────────────────────────────────
@@ -190,6 +334,8 @@ function humanAction(action, amount) {
 function scheduleNext() {
   if (!engine) return;
   const st = engine.state;
+
+  log('scheduleNext(), phase:', st.phase, 'currentPlayerIndex:', st.currentPlayerIndex);
 
   if (st.phase === 'game_over') { fullRedraw(); return; }
 
@@ -211,6 +357,7 @@ function scheduleNext() {
 
   // Auto-advance when all players are all-in
   if (engine.shouldAutoAdvance()) {
+    log('Auto-advancing phase...');
     setTimeout(() => {
       engine.advancePhase();
       fullRedraw();
@@ -220,15 +367,17 @@ function scheduleNext() {
   }
 
   const cur = engine.getCurrentPlayer();
-  if (!cur) return;
+  if (!cur) { log('No current player, stopping.'); return; }
 
   if (cur.isHuman) {
     // Human's turn — render buttons and wait
+    log('Human turn, waiting for input...');
     fullRedraw();
     return;
   }
 
   // AI turn
+  log('AI turn:', cur.name, '(' + cur.aiMode + ')');
   isProcessing = true;
   fullRedraw();
   const delay = AI_DELAY_MIN + Math.random() * AI_DELAY_RANGE;
@@ -238,52 +387,60 @@ function scheduleNext() {
 // ── AI action logic ─────────────────────────────────────────────────────────
 async function performAITurn(player) {
   if (!engine) { isProcessing = false; return; }
-  const st        = engine.state;
-  const validActs = engine.getValidActions(player.id);
-  const actNames  = validActs.map(a => a.action);
+  log('performAITurn:', player.name, '(' + player.aiType + ')');
+  try {
+    const st        = engine.state;
+    const validActs = engine.getValidActions(player.id);
+    const actNames  = validActs.map(a => a.action);
+    log(player.name, 'valid actions:', actNames.join(','));
 
-  let decision;
+    let decision;
 
-  if (player.aiMode === 'cloud' && player.aiConfig) {
-    try {
-      const gameStateForAI = {
-        player,
+    if (player.aiMode === 'cloud' && player.aiConfig) {
+      try {
+        const gameStateForAI = {
+          player,
+          communityCards: st.communityCards,
+          pot:            st.pot,
+          currentBet:     st.currentBet,
+          roundBet:       player.roundBet,
+          handHistory:    st.handHistory,
+          bigBlind:       appSettings.bigBlind,
+          phase:          st.phase
+        };
+        decision = await getCloudAIDecision(player.aiConfig, gameStateForAI, actNames);
+      } catch (e) {
+        logErr('Cloud AI error for ' + player.name + ': ' + e.message);
+        decision = actNames.includes('check') ? { action: 'check' } : { action: 'fold' };
+      }
+    } else {
+      decision = decide({
+        holeCards:      player.holeCards,
         communityCards: st.communityCards,
-        pot:            st.pot,
         currentBet:     st.currentBet,
         roundBet:       player.roundBet,
-        handHistory:    st.handHistory,
+        maxBet:         player.chips + player.roundBet,
+        pot:            st.pot,
+        numActive:      st.players.filter(p => p.status === 'active').length,
+        lastRaise:      st.lastRaise,
         bigBlind:       appSettings.bigBlind,
-        phase:          st.phase
-      };
-      decision = await getCloudAIDecision(player.aiConfig, gameStateForAI, actNames);
-    } catch (e) {
-      console.error('Cloud AI error:', e);
-      decision = actNames.includes('check') ? { action: 'check' } : { action: 'fold' };
+        aiType:         player.aiType || 'balanced',
+        chips:          player.chips
+      });
     }
-  } else {
-    decision = decide({
-      holeCards:      player.holeCards,
-      communityCards: st.communityCards,
-      currentBet:     st.currentBet,
-      roundBet:       player.roundBet,
-      maxBet:         player.chips + player.roundBet,
-      pot:            st.pot,
-      numActive:      st.players.filter(p => p.status === 'active').length,
-      lastRaise:      st.lastRaise,
-      bigBlind:       appSettings.bigBlind,
-      aiType:         player.aiType || 'balanced',
-      chips:          player.chips
-    });
+
+    // Validate decision against available actions
+    decision = normalizeDecision(decision, validActs, actNames);
+    log(player.name, 'decided:', decision.action, decision.amount != null ? decision.amount : '');
+
+    engine.processAction(player.id, decision.action, decision.amount);
+    isProcessing = false;
+    fullRedraw();
+    setTimeout(() => scheduleNext(), 80);
+  } catch (e) {
+    isProcessing = false;
+    logErr('performAITurn() threw for ' + player.name + ': ' + e.message + (e.stack ? '\n' + e.stack : ''));
   }
-
-  // Validate decision against available actions
-  decision = normalizeDecision(decision, validActs, actNames);
-
-  engine.processAction(player.id, decision.action, decision.amount);
-  isProcessing = false;
-  fullRedraw();
-  setTimeout(() => scheduleNext(), 80);
 }
 
 function normalizeDecision(decision, validActs, actNames) {
