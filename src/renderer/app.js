@@ -137,6 +137,7 @@ function startNewGame() {
     engine       = new GameEngine(appSettings);
     log('GameEngine created, players:', engine.state.players.length);
     histRendered = 0;
+    resetDealAnimState();
     document.getElementById('history-log').innerHTML = '';
     log('Calling buildSeats()...');
     buildSeats(document.getElementById('table'), appSettings.playerCount);
@@ -163,6 +164,7 @@ async function loadGame() {
 
     engine       = new GameEngine(appSettings);
     histRendered = 0;
+    resetDealAnimState();
     engine.deserializeState(saved);
     appSettings  = engine.settings;
     document.getElementById('history-log').innerHTML = '';
@@ -327,6 +329,7 @@ function scheduleNext() {
       if (!engine) return;
       document.getElementById('showdown-overlay').classList.remove('active');
       histRendered = 0;
+      resetDealAnimState();
       document.getElementById('history-log').innerHTML = '';
       engine.startNewHand();
       fullRedraw();

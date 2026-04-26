@@ -5,7 +5,7 @@
 const SUITS = ['hearts', 'diamonds', 'clubs', 'spades'];
 const ALL_RANKS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
 
-const RANK_DISPLAY = { 14: 'A', 13: 'K', 12: 'Q', 11: 'J', 10: 'T' };
+const RANK_DISPLAY = { 14: 'A', 13: 'K', 12: 'Q', 11: 'J', 10: '10' };
 const SUIT_SYMBOL  = { hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠' };
 
 class Card {

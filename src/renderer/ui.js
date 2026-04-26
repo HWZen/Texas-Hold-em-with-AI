@@ -1,17 +1,28 @@
 'use strict';
 
+// ── Per-hand deal-animation state ──────────────────────────────────────────
+// Track how many community cards have already been animated so that we only
+// play the deal animation for truly new cards, not on every state redraw.
+let _prevCommunityCount = -1; // -1 forces animation on the very first render
+let _animatedSeats = new Set(); // seat IDs (or 'human') that already have cards
+
+function resetDealAnimState() {
+  _prevCommunityCount = -1;
+  _animatedSeats.clear();
+}
+
 // ── Card rendering ─────────────────────────────────────────────────────────
 
-const RANK_DISPLAY_UI = { 14:'A', 13:'K', 12:'Q', 11:'J', 10:'T' };
+const RANK_DISPLAY_UI = { 14:'A', 13:'K', 12:'Q', 11:'J', 10:'10' };
 const SUIT_SYMBOL_UI  = { hearts:'♥', diamonds:'♦', clubs:'♣', spades:'♠' };
 const RED_SUITS       = new Set(['hearts', 'diamonds']);
 
 function rankName(r)   { return RANK_DISPLAY_UI[r] || String(r); }
 function suitSymbol(s) { return SUIT_SYMBOL_UI[s] || s; }
 
-function makeCardEl(card, small, faceDown) {
+function makeCardEl(card, small, faceDown, animate) {
   const el = document.createElement('div');
-  el.className = 'card deal-anim' + (small ? ' small' : '') + (faceDown ? ' face-down' : '');
+  el.className = 'card' + (small ? ' small' : '') + (faceDown ? ' face-down' : '') + (animate ? ' deal-anim' : '');
 
   if (!faceDown && card) {
     const isRed = RED_SUITS.has(card.suit);
@@ -61,12 +72,15 @@ function updateSeat(seatEl, player, state, isCurrentPlayer) {
   // Cards (face-down for AI, hidden if folded/out)
   const cardsWrap = document.createElement('div');
   cardsWrap.className = 'seat-cards';
+  const seatId = seatEl.id || seatEl.dataset.slot;
   if (player.status !== 'out' && player.status !== 'folded') {
     if (state.phase === 'showdown' && player.holeCards.length === 2) {
-      for (const c of player.holeCards) cardsWrap.appendChild(makeCardEl(c, true, false));
+      for (const c of player.holeCards) cardsWrap.appendChild(makeCardEl(c, true, false, false));
     } else if (player.holeCards.length > 0) {
-      cardsWrap.appendChild(makeCardEl(null, true, true));
-      cardsWrap.appendChild(makeCardEl(null, true, true));
+      const animate = !_animatedSeats.has(seatId);
+      if (animate) _animatedSeats.add(seatId);
+      cardsWrap.appendChild(makeCardEl(null, true, true, animate));
+      cardsWrap.appendChild(makeCardEl(null, true, true, animate));
     }
   }
 
@@ -106,9 +120,12 @@ function updateSeat(seatEl, player, state, isCurrentPlayer) {
 
 function updateCommunityCards(containerEl, cards) {
   containerEl.innerHTML = '';
+  const alreadyAnimated = _prevCommunityCount; // cards before this count were already shown
+  _prevCommunityCount = cards.length;
   for (let i = 0; i < 5; i++) {
     if (i < cards.length) {
-      containerEl.appendChild(makeCardEl(cards[i], false, false));
+      const animate = i >= alreadyAnimated;
+      containerEl.appendChild(makeCardEl(cards[i], false, false, animate));
     } else {
       // Placeholder
       const ph = document.createElement('div');
@@ -124,9 +141,11 @@ function updateCommunityCards(containerEl, cards) {
 function updateHumanCards(containerEl, player, state) {
   containerEl.innerHTML = '';
   if (player.holeCards && player.holeCards.length > 0) {
+    const animate = !_animatedSeats.has('human');
+    if (animate) _animatedSeats.add('human');
     for (const c of player.holeCards) {
       const faceDown = (player.status === 'folded' && state.phase !== 'showdown');
-      containerEl.appendChild(makeCardEl(c, false, faceDown));
+      containerEl.appendChild(makeCardEl(c, false, faceDown, animate));
     }
   }
 }
