@@ -4,10 +4,13 @@
 // Depends on handEvaluator and Card being available (globals in browser, required in Node).
 /* eslint-disable no-var */
 if (typeof module !== 'undefined') {
-  var _card = require('./card.js');
-  var Card  = _card.Card;
-  var _he   = require('./hand-evaluator.js');
-  var handEvaluator = _he.handEvaluator;
+  const _card = require('./card.js');
+  const _he   = require('./hand-evaluator.js');
+  // In Node.js each file is module-scoped, so globals from other files are not
+  // available.  Assign to global so Card / handEvaluator are accessible
+  // throughout this module.  In browser these are already script-tag globals.
+  global.Card          = _card.Card;
+  global.handEvaluator = _he.handEvaluator;
 }
 
 const MONTE_CARLO_SIMS = 180;

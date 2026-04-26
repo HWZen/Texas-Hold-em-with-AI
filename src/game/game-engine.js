@@ -4,11 +4,14 @@
 // When loaded as a Node module, pull in dependencies; in browser they are globals.
 /* eslint-disable no-var */
 if (typeof module !== 'undefined') {
-  var _card = require('./card.js');
-  var Card  = _card.Card;
-  var Deck  = _card.Deck;
-  var _he   = require('./hand-evaluator.js');
-  var handEvaluator = _he.handEvaluator;
+  const _card = require('./card.js');
+  const _he   = require('./hand-evaluator.js');
+  // In Node.js each file is module-scoped, so globals from other files are not
+  // available.  Assign to global so Card / Deck / handEvaluator are accessible
+  // throughout this module.  In browser these are already script-tag globals.
+  global.Card          = _card.Card;
+  global.Deck          = _card.Deck;
+  global.handEvaluator = _he.handEvaluator;
 }
 
 class GameEngine {
