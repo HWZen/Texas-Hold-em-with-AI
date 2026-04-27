@@ -1,0 +1,38 @@
+{
+  "name": "ai-texas-holdem",
+  "version": "1.0.0",
+  "description": "德州扑克 AI 对战游戏",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "dependencies": {
+    "electron-store": "^8.1.0"
+  },
+  "devDependencies": {
+    "electron": "^39.8.9",
+    "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "productName": "AI德州扑克",
+    "appId": "com.aitexasholdem.app",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  }
+}
