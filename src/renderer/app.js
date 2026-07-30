@@ -327,8 +327,11 @@ function scheduleNext() {
     // Wait for manual click to start next hand
     const nextBtn = document.getElementById('next-hand-btn');
     if (nextBtn) {
+      nextBtn.disabled = false;
       nextBtn.onclick = () => {
         if (!engine) return;
+        nextBtn.onclick = null;
+        nextBtn.disabled = true;
         document.getElementById('showdown-overlay').classList.remove('active');
         histRendered = 0;
         resetDealAnimState();
