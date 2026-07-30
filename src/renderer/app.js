@@ -324,17 +324,23 @@ function scheduleNext() {
   if (st.phase === 'game_over') { fullRedraw(); return; }
 
   if (st.phase === 'showdown') {
-    // Hide showdown after 3 s and start next hand
-    setTimeout(() => {
-      if (!engine) return;
-      document.getElementById('showdown-overlay').classList.remove('active');
-      histRendered = 0;
-      resetDealAnimState();
-      document.getElementById('history-log').innerHTML = '';
-      engine.startNewHand();
-      fullRedraw();
-      scheduleNext();
-    }, 3200);
+    // Wait for manual click to start next hand
+    const nextBtn = document.getElementById('next-hand-btn');
+    if (nextBtn) {
+      nextBtn.disabled = false;
+      nextBtn.onclick = () => {
+        if (!engine) return;
+        nextBtn.onclick = null;
+        nextBtn.disabled = true;
+        document.getElementById('showdown-overlay').classList.remove('active');
+        histRendered = 0;
+        resetDealAnimState();
+        document.getElementById('history-log').innerHTML = '';
+        engine.startNewHand();
+        fullRedraw();
+        scheduleNext();
+      };
+    }
     return;
   }
 

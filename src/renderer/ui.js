@@ -73,10 +73,11 @@ function updateSeat(seatEl, player, state, isCurrentPlayer) {
   const cardsWrap = document.createElement('div');
   cardsWrap.className = 'seat-cards';
   const seatId = seatEl.id || seatEl.dataset.slot;
-  if (player.status !== 'out' && player.status !== 'folded') {
+  if (player.status !== 'out') {
     if (state.phase === 'showdown' && player.holeCards.length === 2) {
+      // Show all players' cards face-up at showdown (including folded)
       for (const c of player.holeCards) cardsWrap.appendChild(makeCardEl(c, true, false, false));
-    } else if (player.holeCards.length > 0) {
+    } else if (player.status !== 'folded' && player.holeCards.length > 0) {
       const animate = !_animatedSeats.has(seatId);
       if (animate) _animatedSeats.add(seatId);
       cardsWrap.appendChild(makeCardEl(null, true, true, animate));
