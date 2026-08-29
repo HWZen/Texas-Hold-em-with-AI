@@ -1,0 +1,6 @@
+# Replace poker.example.com with your domain. Caddy obtains and renews HTTPS
+# certificates automatically after the DNS A record points to this server.
+poker.example.com {
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:8080
+}

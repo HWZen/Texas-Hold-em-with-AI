@@ -2,172 +2,104 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'">
-  <title>AI 德州扑克</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#071b1a">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'">
+  <title>Royal River · AI 德州扑克</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
 
-<!-- ══════════════════════════════════════════════════════════════════════════
-     START SCREEN
-═══════════════════════════════════════════════════════════════════════════ -->
-<div id="start-screen" class="screen">
-  <h1>🃏 AI 德州扑克</h1>
-  <p class="subtitle">Texas Hold'em Poker</p>
-  <div class="start-btns">
-    <button class="btn gold" style="font-size:18px;padding:12px 40px" onclick="startNewGame()">新游戏</button>
-    <button class="btn" style="font-size:16px;padding:10px 36px" onclick="loadGame()">载入存档</button>
-    <button class="btn sm" style="margin-top:8px" onclick="openSettings()">⚙ 设置</button>
-  </div>
-</div>
+  <main id="start-screen" class="screen">
+    <section class="hero-card">
+      <div class="brand-mark" aria-hidden="true"><span>♠</span><span>♥</span><span>♦</span></div>
+      <div class="eyebrow"><i></i> PRIVATE TABLE · AI DEALER <i></i></div>
+      <h1>Royal <em>River</em></h1>
+      <p class="subtitle">AI 德州扑克 · 你的私人高桌牌局</p>
+      <div class="hero-copy">从翻牌前的试探，到河牌圈的一锤定音。选择座位，坐上牌桌。</div>
+      <div class="start-btns">
+        <button class="btn gold hero-primary" onclick="startNewGame()"><span>开始牌局</span><b>→</b></button>
+        <div class="secondary-actions">
+          <button class="btn ghost" onclick="loadGame()">继续存档</button>
+          <button class="btn ghost" onclick="openSettings()">牌桌设置</button>
+        </div>
+      </div>
+      <p class="hero-note">LOCAL AI · 单人对局 · 浏览器与桌面端均可运行</p>
+    </section>
+  </main>
 
-<!-- ══════════════════════════════════════════════════════════════════════════
-     GAME SCREEN
-═══════════════════════════════════════════════════════════════════════════ -->
-<div id="game-screen" class="screen" style="flex-direction:column">
+  <main id="game-screen" class="screen">
+    <header id="top-bar">
+      <div class="top-brand"><span class="mini-mark">♠</span><span>ROYAL RIVER</span></div>
+      <div class="game-stats">
+        <div class="stat"><small>HAND</small><strong>#<span id="info-round">0</span></strong></div>
+        <div class="stat"><small>STREET</small><strong id="info-phase">—</strong></div>
+        <div class="stat"><small>POT</small><strong><span id="info-pot">0</span> <b>CHIPS</b></strong></div>
+      </div>
+      <div class="top-actions">
+        <button class="btn icon-btn" title="存档" onclick="saveGame()">⌑</button>
+        <button class="btn icon-btn" title="新局" onclick="startNewGame()">↻</button>
+        <button class="btn icon-btn" title="设置" onclick="openSettings()">⚙</button>
+        <button class="btn icon-btn subtle-danger" title="返回主页" onclick="showScreen('start')">×</button>
+      </div>
+    </header>
 
-  <!-- Top bar -->
-  <div id="top-bar">
-    <div>
-      <span class="info-item">第 <span id="info-round">0</span> 局</span>
-      <span class="info-item">阶段: <span id="info-phase">—</span></span>
-      <span class="info-item">底池: <span id="info-pot">0</span></span>
-    </div>
-    <div style="display:flex;gap:8px">
-      <button class="btn sm" onclick="saveGame()">💾 存档</button>
-      <button class="btn sm" onclick="startNewGame()">♻ 新局</button>
-      <button class="btn sm" onclick="openSettings()">⚙ 设置</button>
-      <button class="btn sm danger" onclick="showScreen('start')">← 返回</button>
-    </div>
-  </div>
-
-  <!-- Body: left panel + table + right panel -->
-  <div style="display:flex;flex:1;overflow:hidden">
-
-    <!-- Left icon panel -->
-    <div id="left-panel"></div>
-
-    <!-- Center: table + human area -->
-    <div id="table-area">
-
-      <!-- Table wrap -->
-      <div id="table-wrap">
-        <div id="table">
-          <!-- AI seats are injected here by buildSeats() -->
-
-          <!-- Center info (pot + community cards) -->
-          <div id="center-info">
-            <div id="community-cards"></div>
-            <div id="pot-display">底池: 0</div>
-            <div id="phase-badge">等待</div>
+    <div id="game-layout">
+      <aside id="left-panel"><span class="rail-label">TABLE<br>01</span><span class="rail-line"></span><span class="rail-label bottom">NLH</span></aside>
+      <section id="table-area">
+        <div id="table-wrap">
+          <div class="table-shadow"></div>
+          <div id="table">
+            <div class="table-label">ROYAL RIVER · NO LIMIT HOLD'EM</div>
+            <div id="center-info">
+              <div id="community-cards"></div>
+              <div id="pot-display">底池 0</div>
+              <div id="phase-badge">等待</div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Human player area -->
-      <div id="human-area">
-        <div id="human-cards"></div>
-        <div id="human-info">
-          <span id="human-dealer-badge" style="
-            background:#fff;color:#000;font-weight:900;font-size:10px;
-            border-radius:50%;width:18px;height:18px;display:inline-flex;
-            align-items:center;justify-content:center"></span>
-          <span id="human-name">你</span>
-          <span id="human-chips">💰 0</span>
-          <span id="human-bet"></span>
-        </div>
-        <div id="action-area">
-          <div id="action-btns" style="display:flex;gap:8px;align-items:center"></div>
-          <div id="raise-controls" style="display:none;align-items:center;gap:6px">
-            <input type="range" id="raise-slider" min="0" max="1000" step="1"
-                   style="width:120px"
-                   oninput="document.getElementById('raise-amount-input').value=this.value">
-            <input type="number" id="raise-amount-input" min="0" max="1000" value="0"
-                   oninput="document.getElementById('raise-slider').value=this.value">
-            <button class="btn success sm" id="raise-confirm-btn">确认加注</button>
-            <button class="btn danger sm"
-                    onclick="document.getElementById('raise-controls').style.display='none'">取消</button>
+        <section id="human-area">
+          <div class="human-header"><span class="human-kicker">YOUR SEAT</span><span class="live-dot"></span><span>LIVE</span></div>
+          <div id="human-cards"></div>
+          <div id="human-info">
+            <span id="human-dealer-badge"></span><span id="human-name">你</span><span id="human-chips">💰 0</span><span id="human-bet"></span>
           </div>
-          <span id="ai-thinking" style="display:none">AI 思考中…</span>
-        </div>
-      </div>
+          <div id="action-area">
+            <div id="action-btns"></div>
+            <div id="raise-controls">
+              <label for="raise-slider">加注至</label>
+              <input type="range" id="raise-slider" min="0" max="1000" step="1" oninput="document.getElementById('raise-amount-input').value=this.value">
+              <input type="number" id="raise-amount-input" min="0" max="1000" value="0" oninput="document.getElementById('raise-slider').value=this.value">
+              <button class="btn success sm" id="raise-confirm-btn">确认</button>
+              <button class="btn danger sm" onclick="document.getElementById('raise-controls').style.display='none'">取消</button>
+            </div>
+            <span id="ai-thinking"><i></i> AI 正在思考牌局…</span>
+          </div>
+        </section>
+      </section>
 
-    </div><!-- /table-area -->
-
-    <!-- Right panel: history -->
-    <div id="right-panel">
-      <h3>📋 行动记录</h3>
-      <div id="history-log"></div>
+      <aside id="right-panel">
+        <div class="history-heading"><div><small>TABLE FEED</small><h3>牌局动态</h3></div><span class="history-pulse"></span></div>
+        <div id="history-log"></div>
+      </aside>
     </div>
 
-  </div><!-- /flex row -->
+    <div id="game-over-overlay" class="modal-overlay"><div class="result-modal"><div class="result-icon">♛</div><p class="eyebrow">FINAL RESULT</p><h2>游戏结束</h2><p id="game-over-msg"></p><div class="modal-actions"><button class="btn gold" onclick="startNewGame()">再来一局</button><button class="btn ghost" onclick="showScreen('start')">返回主页</button></div></div></div>
+    <div id="showdown-overlay" class="modal-overlay"><div id="showdown-results"></div><button class="btn gold" id="next-hand-btn">确认结果 · 下一局</button></div>
+  </main>
 
-  <!-- Game over overlay -->
-  <div id="game-over-overlay">
-    <h2>🏆 游戏结束</h2>
-    <p id="game-over-msg" style="font-size:20px;color:#ddd"></p>
-    <div style="display:flex;gap:14px;margin-top:10px">
-      <button class="btn gold" style="font-size:16px" onclick="startNewGame()">再来一局</button>
-      <button class="btn sm" onclick="showScreen('start')">返回主菜单</button>
+  <div id="settings-modal" class="modal-overlay"><section id="settings-box">
+    <div class="modal-title"><div><p class="eyebrow">TABLE CONTROL</p><h2>牌桌设置</h2></div><button class="btn icon-btn" onclick="closeSettings()">×</button></div>
+    <div class="settings-section"><h3>基本筹码结构</h3>
+      <div class="settings-grid"><label>玩家数量 (2–8)<input class="settings-input" type="number" id="setting-player-count" min="2" max="8" value="5"></label><label>初始筹码<input class="settings-input" type="number" id="setting-initial-chips" min="100" value="10000"></label><label>小盲注<input class="settings-input" type="number" id="setting-small-blind" min="1" value="10"></label><label>大盲注<input class="settings-input" type="number" id="setting-big-blind" min="2" value="20"></label></div>
     </div>
-  </div>
+    <div class="settings-section"><h3>对手阵容</h3><p class="settings-caption">每位对手都有自己的风格。浏览器部署时，云端 AI 需由服务器管理员配置。</p><div id="ai-players-container"></div></div>
+    <div class="settings-footer"><button class="btn ghost" onclick="closeSettings()">取消</button><button class="btn success" onclick="saveSettings()">保存设置</button></div>
+  </section></div>
 
-  <!-- Showdown overlay -->
-  <div id="showdown-overlay">
-    <div id="showdown-results"></div>
-    <button class="btn gold" id="next-hand-btn" style="margin-top:14px;font-size:16px;padding:10px 36px">确认 → 开始下一局</button>
-  </div>
-
-</div><!-- /game-screen -->
-
-<!-- ══════════════════════════════════════════════════════════════════════════
-     SETTINGS MODAL
-═══════════════════════════════════════════════════════════════════════════ -->
-<div id="settings-modal">
-  <div id="settings-box">
-    <h2>⚙ 游戏设置</h2>
-
-    <div class="settings-section">
-      <h3>基本设置</h3>
-      <div class="settings-row">
-        <label>玩家数量 (2-8)</label>
-        <input class="settings-input" type="number" id="setting-player-count" min="2" max="8" value="5">
-      </div>
-      <div class="settings-row">
-        <label>初始筹码</label>
-        <input class="settings-input" type="number" id="setting-initial-chips" min="100" value="10000">
-      </div>
-      <div class="settings-row">
-        <label>小盲注</label>
-        <input class="settings-input" type="number" id="setting-small-blind" min="1" value="10">
-      </div>
-      <div class="settings-row">
-        <label>大盲注</label>
-        <input class="settings-input" type="number" id="setting-big-blind" min="2" value="20">
-      </div>
-    </div>
-
-    <div class="settings-section">
-      <h3>AI 玩家配置</h3>
-      <div id="ai-players-container"></div>
-    </div>
-
-    <div class="settings-footer">
-      <button class="btn sm" onclick="closeSettings()">取消</button>
-      <button class="btn sm success" onclick="saveSettings()">保存</button>
-    </div>
-  </div>
-</div>
-
-<!-- ── Game scripts (order matters) ─────────────────────────────────────── -->
-<script src="../game/card.js"></script>
-<script src="../game/hand-evaluator.js"></script>
-<script src="../game/local-ai.js"></script>
-<script src="../game/cloud-ai.js"></script>
-<script src="../game/game-engine.js"></script>
-<script src="ui.js"></script>
-<script src="app.js"></script>
-
+  <script src="web-api.js"></script>
+  <script src="../game/card.js"></script><script src="../game/hand-evaluator.js"></script><script src="../game/local-ai.js"></script><script src="../game/cloud-ai.js"></script><script src="../game/game-engine.js"></script><script src="ui.js"></script><script src="app.js"></script>
 </body>
 </html>

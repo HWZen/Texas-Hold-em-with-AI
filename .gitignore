@@ -3,3 +3,5 @@ dist/
 out/
 .DS_Store
 *.log
+# Server-only deployment configuration (contains optional API keys)
+server.config.json

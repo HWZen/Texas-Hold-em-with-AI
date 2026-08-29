@@ -1,0 +1,7 @@
+{
+  "port": 8080,
+  "host": "127.0.0.1",
+  "aiApiUrl": "https://your-provider.example/v1/chat/completions",
+  "aiApiKey": "replace-with-your-server-side-key",
+  "aiModel": "your-model-name"
+}
