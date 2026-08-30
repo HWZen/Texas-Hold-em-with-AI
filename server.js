@@ -119,7 +119,12 @@ async function serve(req, res) {
   }
 
   if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, 'Method Not Allowed');
-  const requested = url.pathname === '/' ? '/renderer/index.html' : decodeURIComponent(url.pathname);
+  if (url.pathname === '/') {
+    // Redirect instead of serving index.html at "/": the page references its
+    // assets relatively, so the document URL must be /renderer/index.html.
+    return send(res, 302, '', { Location: '/renderer/index.html' });
+  }
+  const requested = decodeURIComponent(url.pathname);
   const filepath = path.resolve(PUBLIC_ROOT, '.' + requested);
   if (!filepath.startsWith(PUBLIC_ROOT + path.sep)) return send(res, 403, 'Forbidden');
 
